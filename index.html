@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Uchrashuvga taklif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbe9ec;--card:#fff8f6;--ink:#4a1d2f;--accent:#e8496a;--on-accent:#fff;
+  --gold:#b98341;--line:#e9c9d0;--quiet:#efe0e3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#24101c;--card:#321728;--ink:#fbe9ec;--accent:#ff6b8a;--on-accent:#2a1220;--gold:#e0b172;--line:#5a3348;--quiet:#47283b}
+}
+:root[data-theme="dark"]{--bg:#24101c;--card:#321728;--ink:#fbe9ec;--accent:#ff6b8a;--on-accent:#2a1220;--gold:#e0b172;--line:#5a3348;--quiet:#47283b}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;overflow-x:hidden;
+  background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;text-align:center;
+}
+main{position:relative;z-index:1;margin:auto;padding:20px;width:100%;max-width:25rem}
+.card{
+  background:var(--card);border-radius:22px;padding:40px 26px 34px;
+  box-shadow:inset 0 0 0 7px var(--card),inset 0 0 0 8px var(--line),0 18px 40px -22px rgba(74,29,47,.45);
+}
+.step{animation:fade .5s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.orn{color:var(--gold);font-size:1.6rem;line-height:1;margin-bottom:14px}
+h1{
+  font-family:Fraunces,Georgia,serif;font-weight:600;font-style:italic;
+  font-size:clamp(1.9rem,8.5vw,2.6rem);line-height:1.14;margin:0 0 .5em;
+}
+p{margin:0 0 1.8rem;font-size:1.02rem;line-height:1.55;opacity:.85}
+.row{display:flex;gap:20px;justify-content:center;align-items:center;min-height:64px}
+button{
+  font:inherit;font-size:1.08rem;padding:.8em 1.7em;border:0;border-radius:999px;
+  cursor:pointer;touch-action:manipulation;color:var(--ink);
+}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+#ha,.primary{background:var(--accent);color:var(--on-accent);font-weight:600}
+#ha{transition:transform .2s ease}
+#yoq{background:var(--quiet)}
+#yoq.run{position:fixed;z-index:2;transition:left .25s ease,top .25s ease}
+.group{margin:0 0 1.4rem}
+.group h2{font-size:.95rem;font-weight:600;margin:0 0 .6rem;opacity:.8}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{
+  background:transparent;border:1.5px solid var(--line);border-radius:14px;
+  padding:.5em .85em;font-size:.95rem;line-height:1.25;display:flex;flex-direction:column;align-items:center;
+}
+.chip b{font-weight:600}
+.chip span{font-size:.82rem;opacity:.8}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+a.primary{display:inline-block;text-decoration:none;font-size:1.08rem;padding:.8em 1.7em;border-radius:999px}
+.primary:disabled{opacity:.4;cursor:default}
+.result{font-family:Fraunces,Georgia,serif;font-size:1.35rem;margin:0 0 1.6rem}
+.petal{
+  position:fixed;top:-24px;z-index:0;pointer-events:none;
+  width:10px;height:14px;background:var(--accent);opacity:.55;border-radius:100% 0 100% 0;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  to{transform:translate(var(--dx),110vh) rotate(var(--rot))}
+}
+@media (prefers-reduced-motion:reduce){.petal{display:none}.step{animation:none}#ha,#yoq.run{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="card">
+    <div class="step" id="s1">
+      <div class="orn">✿</div>
+      <h1>Men bilan uchrashuvga chiqasanmi?</h1>
+      <p>Bir piyola choy ustida gaplashsak, juda xursand bo'lardim.</p>
+      <div class="row">
+        <button id="ha" type="button">Ha</button>
+        <button id="yoq" type="button">Yo'q</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  var MONTHS = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+  var DAYS = ['Yakshanba','Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba'];
+  var TIMES = ['12:00','15:00','18:00','20:00'];
+  var card = document.getElementById('card');
+  var ha = document.getElementById('ha');
+  var yoq = document.getElementById('yoq');
+  var scale = 1;
+  var chosen = { date: null, time: null };
+
+  /* gentle falling petals */
+  function petals(n) {
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement('div');
+      p.className = 'petal';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (5 + Math.random() * 5) + 's';
+      p.style.animationDelay = (Math.random() * 3) + 's';
+      p.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 540 - 270) + 'deg');
+      document.body.appendChild(p);
+      (function (el) { setTimeout(function () { el.remove(); }, 12000); })(p);
+    }
+  }
+  petals(14);
+
+  /* the runaway "No" button */
+  function qoch(e) {
+    if (e) e.preventDefault();
+    var r = yoq.getBoundingClientRect();
+    if (!yoq.classList.contains('run')) {
+      yoq.style.left = r.left + 'px';
+      yoq.style.top = r.top + 'px';
+      yoq.classList.add('run');
+      void yoq.offsetWidth;
+    }
+    var m = 12;
+    var maxX = window.innerWidth - r.width - m;
+    var maxY = window.innerHeight - r.height - m;
+    var x, y, tries = 0;
+    do {
+      x = m + Math.random() * Math.max(maxX - m, 0);
+      y = m + Math.random() * Math.max(maxY - m, 0);
+      tries++;
+    } while (tries < 12 && Math.hypot(x - r.left, y - r.top) < 120);
+    yoq.style.left = x + 'px';
+    yoq.style.top = y + 'px';
+    scale = Math.min(scale + 0.1, 1.7);
+    ha.style.transform = 'scale(' + scale + ')';
+  }
+  yoq.addEventListener('pointerenter', qoch);
+  yoq.addEventListener('pointerdown', qoch);
+  yoq.addEventListener('click', qoch);
+
+  /* step 2: choose day and time */
+  function pick(groupEl, btn, key, value) {
+    var all = groupEl.querySelectorAll('.chip');
+    for (var i = 0; i < all.length; i++) all[i].setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-pressed', 'true');
+    chosen[key] = value;
+    document.getElementById('go').disabled = !(chosen.date && chosen.time);
+  }
+
+  function step2() {
+    card.innerHTML =
+      '<div class="step">' +
+        '<div class="orn">✿</div>' +
+        '<h1>Juda xursandman!</h1>' +
+        '<p>Qaysi kun va soat sizga qulay bo\'lsa, shuni tanlang.</p>' +
+        '<div class="group"><h2>Kun</h2><div class="chips" id="days"></div></div>' +
+        '<div class="group"><h2>Vaqt</h2><div class="chips" id="times"></div></div>' +
+        '<button class="primary" id="go" type="button" disabled>Tanladim</button>' +
+      '</div>';
+
+    var daysEl = document.getElementById('days');
+    for (var i = 1; i <= 7; i++) {
+      var d = new Date();
+      d.setDate(d.getDate() + i);
+      var label = DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = '<b>' + DAYS[d.getDay()] + '</b><span>' + d.getDate() + ' ' + MONTHS[d.getMonth()] + '</span>';
+      (function (btn, text) {
+        btn.addEventListener('click', function () { pick(daysEl, btn, 'date', text); });
+      })(b, label);
+      daysEl.appendChild(b);
+    }
+
+    var timesEl = document.getElementById('times');
+    TIMES.forEach(function (t) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = '<b>' + t + '</b>';
+      b.addEventListener('click', function () { pick(timesEl, b, 'time', t); });
+      timesEl.appendChild(b);
+    });
+
+    document.getElementById('go').addEventListener('click', step3);
+  }
+
+  /* step 3: confirmation, choice goes straight to the owner's Telegram chat */
+  var TELEGRAM = 'neuroega';
+
+  function step3() {
+    var text = 'Men tanladim: ' + chosen.date + ', soat ' + chosen.time + ' 🌸';
+    var href = 'https://t.me/' + TELEGRAM + '?text=' + encodeURIComponent(text);
+    card.innerHTML =
+      '<div class="step">' +
+        '<div class="orn">✿</div>' +
+        '<h1>Kelishdik!</h1>' +
+        '<p class="result">' + chosen.date + '<br>soat ' + chosen.time + '</p>' +
+        '<a class="primary" href="' + href + '" target="_blank" rel="noopener">Menga yuborish</a>' +
+      '</div>';
+    petals(30);
+  }
+
+  ha.addEventListener('click', step2);
+</script>
+</body>
+</html>
